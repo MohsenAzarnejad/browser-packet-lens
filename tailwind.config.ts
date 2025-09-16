@@ -47,6 +47,28 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        protocol: {
+          tcp: "hsl(var(--protocol-tcp))",
+          udp: "hsl(var(--protocol-udp))",
+          http: "hsl(var(--protocol-http))",
+          https: "hsl(var(--protocol-https))",
+          dns: "hsl(var(--protocol-dns))",
+          icmp: "hsl(var(--protocol-icmp))",
+          arp: "hsl(var(--protocol-arp))",
+          unknown: "hsl(var(--protocol-unknown))",
+        },
+        hex: {
+          offset: "hsl(var(--hex-offset))",
+          data: "hsl(var(--hex-data))",
+          ascii: "hsl(var(--hex-ascii))",
+          selected: "hsl(var(--hex-selected))",
+        },
+        status: {
+          success: "hsl(var(--status-success))",
+          warning: "hsl(var(--status-warning))",
+          error: "hsl(var(--status-error))",
+          info: "hsl(var(--status-info))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
