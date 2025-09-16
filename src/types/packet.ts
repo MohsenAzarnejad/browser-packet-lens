@@ -8,6 +8,7 @@ export interface Packet {
   info: string;
   data: string;
   layers: PacketLayer[];
+  rawData?: number[];
 }
 
 export interface PacketLayer {
@@ -19,10 +20,12 @@ export interface PacketLayer {
 
 export interface PacketField {
   name: string;
-  showName: string;
+  showName?: string;
   value: string;
   size?: number;
   pos?: number;
+  offset?: number;
+  length?: number;
   type?: string;
   description?: string;
 }
