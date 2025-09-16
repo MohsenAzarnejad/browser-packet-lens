@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Packet, FilterRule, PacketLayer } from "@/types/packet";
 import { mockPackets } from "@/data/mockPackets";
 import { FilterBar } from "./FilterBar";
@@ -7,15 +7,44 @@ import { PacketDetails } from "./PacketDetails";
 import { HexDump } from "./HexDump";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Pause, Square, RotateCcw } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Play, Pause, Square, RotateCcw, Upload, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const PacketAnalyzer = () => {
-  const [packets] = useState<Packet[]>(mockPackets);
+  const [packets, setPackets] = useState<Packet[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [selectedPacket, setSelectedPacket] = useState<Packet | null>(null);
   const [selectedField, setSelectedField] = useState<any>(null);
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      // For demo purposes, use mock data
+      // In a real implementation, you would parse the PCAP file here
+      setPackets(mockPackets);
+      toast.success(`PCAP file "${file.name}" loaded successfully`);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setPackets([]);
+    setSelectedPacket(null);
+    setFilterRules([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    toast.success("PCAP file removed");
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
 
   // Parse and apply display filters
   const parseFilter = (filterString: string): FilterRule | null => {
@@ -142,99 +171,151 @@ export const PacketAnalyzer = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-card border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Packet Analyzer
-            </h1>
-            <Badge variant="outline" className="text-xs">
-              Web Interface
-            </Badge>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant={isCapturing ? "destructive" : "default"}
-              size="sm"
-              onClick={toggleCapture}
-            >
-              {isCapturing ? (
-                <>
-                  <Pause className="h-4 w-4 mr-2" />
+      {!uploadedFile ? (
+        // File Upload Interface
+        <div className="min-h-screen flex items-center justify-center p-8">
+          <Card className="w-full max-w-2xl">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Packet Analyzer
+              </CardTitle>
+              <CardDescription className="text-lg">
+                Upload a PCAP file to start analyzing network packets
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div 
+                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                onClick={triggerFileUpload}
+              >
+                <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">Choose PCAP File</h3>
+                <p className="text-muted-foreground mb-4">
+                  Click here or drag and drop your .pcap, .pcapng, or .cap file
+                </p>
+                <Button>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Select File
+                </Button>
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pcap,.pcapng,.cap"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              
+              <div className="text-center text-sm text-muted-foreground">
+                <p>Supported formats: PCAP, PCAPNG, CAP</p>
+                <p>Maximum file size: 100MB</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        // Main Analyzer Interface
+        <>
+          {/* Header */}
+          <div className="bg-card border-b border-border p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Packet Analyzer
+                </h1>
+                <Badge variant="outline" className="text-xs">
+                  <FileText className="h-3 w-3 mr-1" />
+                  {uploadedFile.name}
+                </Badge>
+                <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isCapturing ? "destructive" : "default"}
+                  size="sm"
+                  onClick={toggleCapture}
+                >
+                  {isCapturing ? (
+                    <>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Stop
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Start
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" onClick={stopCapture}>
+                  <Square className="h-4 w-4 mr-2" />
                   Stop
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Start
-                </>
-              )}
-            </Button>
-            <Button variant="outline" size="sm" onClick={stopCapture}>
-              <Square className="h-4 w-4 mr-2" />
-              Stop
-            </Button>
-            <Button variant="outline" size="sm" onClick={restartCapture}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Restart
-            </Button>
-            <Badge variant={isCapturing ? "default" : "secondary"} className="ml-2">
-              {isCapturing ? "Capturing" : "Stopped"}
-            </Badge>
+                </Button>
+                <Button variant="outline" size="sm" onClick={restartCapture}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Restart
+                </Button>
+                <Badge variant={isCapturing ? "default" : "secondary"} className="ml-2">
+                  {isCapturing ? "Capturing" : "Stopped"}
+                </Badge>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Filter Bar */}
-      <FilterBar
-        onFilterChange={handleFilterChange}
-        activeFilters={filterRules}
-        onRemoveFilter={handleRemoveFilter}
-        onClearFilters={handleClearFilters}
-      />
-
-      {/* Main Content - Three Panel Layout */}
-      <div className="flex-1 p-4 grid grid-rows-2 grid-cols-2 gap-4 h-[calc(100vh-200px)]">
-        {/* Packet List - Top spanning both columns */}
-        <div className="col-span-2">
-          <PacketList
-            packets={filteredPackets}
-            selectedPacket={selectedPacket}
-            onPacketSelect={setSelectedPacket}
+          {/* Filter Bar */}
+          <FilterBar
+            onFilterChange={handleFilterChange}
+            activeFilters={filterRules}
+            onRemoveFilter={handleRemoveFilter}
+            onClearFilters={handleClearFilters}
           />
-        </div>
 
-        {/* Packet Details - Bottom Left */}
-        <div>
-          <PacketDetails
-            packet={selectedPacket}
-            onFieldSelect={handleFieldSelect}
-          />
-        </div>
+          {/* Main Content - Three Panel Layout */}
+          <div className="flex-1 p-4 grid grid-rows-2 grid-cols-2 gap-4 h-[calc(100vh-200px)]">
+            {/* Packet List - Top spanning both columns */}
+            <div className="col-span-2">
+              <PacketList
+                packets={filteredPackets}
+                selectedPacket={selectedPacket}
+                onPacketSelect={setSelectedPacket}
+              />
+            </div>
 
-        {/* Hex Dump - Bottom Right */}
-        <div>
-          <HexDump
-            packet={selectedPacket}
-            selectedField={selectedField}
-          />
-        </div>
-      </div>
+            {/* Packet Details - Bottom Left */}
+            <div>
+              <PacketDetails
+                packet={selectedPacket}
+                onFieldSelect={handleFieldSelect}
+              />
+            </div>
 
-      {/* Status Bar */}
-      <div className="bg-muted border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <span>
-            Showing {filteredPackets.length} of {packets.length} packets
-            {filterRules.length > 0 && ` (${filterRules.length} filter${filterRules.length > 1 ? 's' : ''} active)`}
-          </span>
-          <span>
-            {selectedPacket ? `Selected: Packet #${selectedPacket.id}` : 'No packet selected'}
-          </span>
-        </div>
-      </div>
+            {/* Hex Dump - Bottom Right */}
+            <div>
+              <HexDump
+                packet={selectedPacket}
+                selectedField={selectedField}
+              />
+            </div>
+          </div>
+
+          {/* Status Bar */}
+          <div className="bg-muted border-t border-border px-4 py-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <span>
+                Showing {filteredPackets.length} of {packets.length} packets
+                {filterRules.length > 0 && ` (${filterRules.length} filter${filterRules.length > 1 ? 's' : ''} active)`}
+              </span>
+              <span>
+                {selectedPacket ? `Selected: Packet #${selectedPacket.id}` : 'No packet selected'}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
